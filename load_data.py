@@ -24,7 +24,7 @@ def extract_month(date):
     return(date.month)
     
 
-def load_data(path):  
+def load_data(path, ass):  
 
     ## Loading the data 
     col_loaded = ['DATE', 'DAY_OFF', 'WEEK_END', 
@@ -33,7 +33,8 @@ def load_data(path):
     
     data = pd.read_csv(path, 
                        sep = ";",
-                       usecols = col_loaded) 
+                       usecols = col_loaded,
+                       nrows = nrows) 
                        
     nrows = len(data.index)
     #data = data.set_index('DATE')
@@ -69,61 +70,72 @@ def load_data(path):
     col_used = ['DATE', 'DAY_OFF', 'WEEK_END', 
                 'ASS_ASSIGNMENT','JOUR', 'NUIT', 'CSPL_RECEIVED_CALLS']     
     
-    preproc_data = data[col_used]
-    preproc_data.sort_values(["ASS_ASSIGNMENT", "DATE"], inplace = True)
+    data = data[col_used]
+    data.sort_values(["ASS_ASSIGNMENT", "DATE"], inplace = True)
                
-        ## Selecting one ASS_ASSIGNEMENT (One model for each)
+    ## Selecting one ASS_ASSIGNEMENT (One model for each)
     
-    preproc_data = preproc_data.loc[preproc_data.loc[:,"ASS_ASSIGNMENT"] == "Téléphonie", :]
-    preproc_data.drop(["ASS_ASSIGNMENT"],1, inplace = True)
+    l = len(ass)
+    preproc_data = []
+    rcvcall_data = []
+    features_data = []
+
+    for i in range(l):
+        
+        print("Preprocessing n°" + str(i + 1) + "/" + str(l))
     
-    nrows = len(preproc_data.index)   
-    print(str(nrows) + " rows to process.")
-    
-    rcvcall_data = preproc_data.groupby(["DATE"])['CSPL_RECEIVED_CALLS'].sum()
-    preproc_data = preproc_data.groupby(["DATE"]).mean()
-    preproc_data.loc[:, 'CSPL_RECEIVED_CALLS'] = rcvcall_data   
-    preproc_data.loc[:, 'DATE'] = preproc_data.index
-    
-    nrows = len(preproc_data)
-    print(str(nrows) + " rows to process.")
-    print(preproc_data)
+        assignement = ass[i]
+        print("Selecting one ASS_ASSIGNEMENT : " + assignement)
+            
+        preproc_data.append(data.loc[data.loc[:,"ASS_ASSIGNMENT"] == assignement, :])
+        preproc_data[i].drop(["ASS_ASSIGNMENT"],1, inplace = True)
+        
+        nrows = len(preproc_data[i].index)  
+        print(str(nrows) + " rows to process.")
+        
+        print("Grouping by dates...")
+        rcvcall = preproc_data[i].groupby(["DATE"])['CSPL_RECEIVED_CALLS'].sum()
+        preproc_data[i] = preproc_data[i].groupby(["DATE"]).mean()
+        preproc_data[i].loc[:, 'CSPL_RECEIVED_CALLS'] = rcvcall   
+        preproc_data[i].loc[:, 'DATE'] = preproc_data[i].index
+        
+        nrows = len(preproc_data[i])
+        print(str(nrows) + " rows to process.")
+#    print(preproc_data)
     
     ## Feature engineering
     
-    print("Feature engineering...")    
+        print("Feature engineering...")    
     
-    # Paramètres pour les dates
-    dates = preproc_data['DATE'].apply(extract_date, 1)
-    
-    #print(dates)
-    
-    preproc_data.loc[:,"WEEKDAY"] = dates.apply(extract_weekday, 1)
-    preproc_data.loc[:,"HOUR"] = dates.apply(extract_hour, 1)
-    preproc_data.loc[:,"MONTH"] = dates.apply(extract_month, 1)
-    
-    preproc_data.loc[:,"DATE"] = dates
+        # Paramètres pour les dates
+        dates = preproc_data[i]['DATE'].apply(extract_date, 1)
+        
+        #print(dates)
+        
+        preproc_data[i].loc[:,"WEEKDAY"] = dates.apply(extract_weekday, 1)
+        preproc_data[i].loc[:,"HOUR"] = dates.apply(extract_hour, 1)
+        preproc_data[i].loc[:,"MONTH"] = dates.apply(extract_month, 1)
+        
+        preproc_data[i].loc[:,"DATE"] = dates
     
     #print(used_data.describe())
     
     # Paramètre moyenne et variance de la cible sur chaque jour de la semaine
     
-    m = preproc_data.groupby(["WEEKDAY"])["CSPL_RECEIVED_CALLS"].transform(np.mean)
-    s = preproc_data.groupby(["WEEKDAY"])["CSPL_RECEIVED_CALLS"].transform(np.std)
-    preproc_data.loc[:, "WEEKDAY_MEAN"] = m
-    preproc_data.loc[:, "WEEKDAY_STD"] = s
-    #print(preproc_data) 
-    
+        m = preproc_data[i].groupby(["WEEKDAY"])["CSPL_RECEIVED_CALLS"].transform(np.mean)
+        s = preproc_data[i].groupby(["WEEKDAY"])["CSPL_RECEIVED_CALLS"].transform(np.std)
+        preproc_data[i].loc[:, "WEEKDAY_MEAN"] = m
+        preproc_data[i].loc[:, "WEEKDAY_STD"] = s
 
-    #print(used_data)
-    
-    
-    rcvcall_data = preproc_data.groupby(["DATE"])['CSPL_RECEIVED_CALLS'].sum()
-    features_data = preproc_data.groupby(["DATE"]).mean()
-    features_data.drop(["CSPL_RECEIVED_CALLS"], 1, inplace = True)
-    
-    
-    rcvcall_data.plot()
+    #print(preproc_data) 
+        rcvcall_data.append(preproc_data[i]['CSPL_RECEIVED_CALLS'])
+        features_data.append(preproc_data[i])
+        features_data[i].drop(["CSPL_RECEIVED_CALLS"], 1, inplace = True)
+        
+        print(len(preproc_data))
+        print(len(rcvcall_data))
+        print(len(features_data))
+#    rcvcall_data[2].plot()
     ## Cleaning the data 
     
     
