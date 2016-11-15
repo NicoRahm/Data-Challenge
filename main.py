@@ -18,7 +18,7 @@ ass = ['CMS', 'Crises', 'Domicile', 'Gestion', 'Gestion - Accueil Telephonique',
            'Services', 'Tech. Axa', 'Tech. Inter', 'Téléphonie']
 l = len(ass)
 
-features_data, rcvcall_data = load_data("/home/nicolas/Documents/INF554 - Machine Learning/AXA Data Challenge/train_2011_2012_2013.7z/train_2011_2012_2013.csv",
+features_data, rcvcall_data, preproc_data = load_data("/home/nicolas/Documents/INF554 - Machine Learning/AXA Data Challenge/train_2011_2012_2013.7z/train_2011_2012_2013.csv",
                                         ass)
 
 
@@ -30,6 +30,10 @@ for i in range(l):
     models[i], error = learn_xgb(features_data[i], rcvcall_data[i])
 
 
+models = pd.DataFrame(models)
+models.index = ass
+models.rename(index = str, columns = {0:"Models"})
+    
 ## Result visualization 
 
 n_to_vis = 3
@@ -46,4 +50,7 @@ y = pd.concat([y_test, y_pred], axis = 1)
 y.columns = ["TRUE_VALUE", "PRED_VALUE"]
 
 y.plot()
+
+
+
 
