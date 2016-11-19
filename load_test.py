@@ -103,8 +103,8 @@ def return_day_night(time_full):
 
 	time = time_full.split(" ")
 	hour_min = (time[0].split("-"))
-	hour_proper = hour_min[0]
-	minutes = hour_min[1]
+	hour_proper = int(hour_min[0])
+	minutes = int(hour_min[1])
 
 	if (hour_proper >= 7 and minutes >= 30 and hour_proper < 23):
 		jour = 1
@@ -246,5 +246,5 @@ def extract_mean_std(data):
 
 
 if __name__ == '__main__':
-
-	read_file_content(20000, "train_2011_2012_2013.csv", "submission.txt")
+    os.chdir("/home/nicolas/Documents/INF554 - Machine Learning/AXA Data Challenge")
+    read_file_content(20000, "train_2011_2012_2013.csv", "submission.txt")
