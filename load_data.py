@@ -132,13 +132,27 @@ def load_data(path, ass):
         features_data.append(preproc_data[i])
         features_data[i].drop(["CSPL_RECEIVED_CALLS"], 1, inplace = True)
         
-        print(len(preproc_data))
-        print(len(rcvcall_data))
-        print(len(features_data))
+#        print(len(preproc_data))
+#        print(len(rcvcall_data))
+#        print(len(features_data))
 #    rcvcall_data[2].plot()
     ## Cleaning the data 
     
     
     
     
-    return features_data, rcvcall_data
+    return features_data, rcvcall_data, preproc_data
+    
+#FOR TESTING"
+
+if __name__ == '__main__':
+    import os
+    os.chdir("/home/nicolas/Documents/INF554 - Machine Learning/AXA Data Challenge")
+    ass = ['CMS', 'Crises', 'Domicile', 'Gestion', 'Gestion - Accueil Telephonique', 
+	'Gestion Assurances', 'Gestion Relation Clienteles', 'Gestion Renault', 'Japon', 'Médical',
+	 'Nuit', 'RENAULT', 'Regulation Medicale', 'SAP', 'Services', 'Tech. Axa', 'Tech. Inter', 'Téléphonie', 
+	 'Tech. Total', 'Mécanicien', 'CAT', 'Manager', 'Gestion Clients', 'Gestion DZ', 'RTC', 'Prestataires']
+    
+    features_data, rcvcall_data, preproc_data = load_data("train_2011_2012_2013.csv",
+                                                      ass)
+    
