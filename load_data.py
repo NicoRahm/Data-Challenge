@@ -24,17 +24,20 @@ def extract_month(date):
     return(date.month)
     
 
-def load_data(path, ass):  
+def load_data(path, ass, nrows = None):  
 
     ## Loading the data 
     col_loaded = ['DATE', 'DAY_OFF', 'WEEK_END', 
                   'ASS_ASSIGNMENT','TPER_TEAM', 'CSPL_RECEIVED_CALLS'] 
-    nrows = 200000
-    
-    data = pd.read_csv(path, 
+    if (nrows == None): 
+        data = pd.read_csv(path, 
                        sep = ";",
-                       usecols = col_loaded,
-                       nrows = nrows) 
+                       usecols = col_loaded)
+    else:
+        data = pd.read_csv(path, 
+                           sep = ";",
+                           usecols = col_loaded,
+                           nrows = nrows) 
                        
     nrows = len(data.index)
     #data = data.set_index('DATE')
@@ -130,7 +133,7 @@ def load_data(path, ass):
     #print(preproc_data) 
         rcvcall_data.append(preproc_data[i]['CSPL_RECEIVED_CALLS'])
         features_data.append(preproc_data[i])
-        features_data[i].drop(["CSPL_RECEIVED_CALLS"], 1, inplace = True)
+        features_data[i].drop(["CSPL_RECEIVED_CALLS", "DATE"], 1, inplace = True)
         
 #        print(len(preproc_data))
 #        print(len(rcvcall_data))
@@ -154,5 +157,6 @@ if __name__ == '__main__':
 	 'Tech. Total', 'Mécanicien', 'CAT', 'Manager', 'Gestion Clients', 'Gestion DZ', 'RTC', 'Prestataires']
     
     features_data, rcvcall_data, preproc_data = load_data("train_2011_2012_2013.csv",
-                                                      ass)
+                                                          ass = ass,
+                                                          nrows = 200000)
     
