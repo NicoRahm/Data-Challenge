@@ -8,6 +8,7 @@ Created on Sun Nov 20 00:43:44 2016
 
 
 from sklearn.externals import joblib
+import pandas as pd
 
 default_dir = "/home/nicolas/Documents/INF554 - Machine Learning/AXA Data Challenge"
 
@@ -29,17 +30,21 @@ def save_multiple_xgb(models,
                       dir_path = default_dir):
     
     l = len(models)
+    index = models.index
     for i in range(l): 
-        save_xgb(models[i], name + "-" + str(i), dir_path)
+        save_xgb(models.loc[index[i]], name + "-" + str(index[i]), dir_path)
 
-def load_multiple_xgb(n_models, 
+def load_multiple_xgb(index_models, 
                       name, 
                       dir_path = default_dir):
     
     models = []
+    n_models = len(index_models)
     for i in range(n_models):
-        models.append(load_xgb(name + "-" + str(i), dir_path))
-    
+        models.append(load_xgb(name + "-" + str(index_models[i]), dir_path))
+    models = pd.DataFrame(models)
+    models.index = index_models
+    models.rename(index = str, columns = {0:"Models"})
     return(models)
 
 if __name__ == '__main__':
