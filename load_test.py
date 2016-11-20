@@ -22,7 +22,7 @@ def get_file_content(filename):
 		print("Reading File")
 		return content
 
-def read_file_content(nrows, path_train, filename):
+def read_file_content(path_train, filename, nrows = None):
 
 	ass = ['CMS', 'Crises', 'Domicile', 'Gestion', 'Gestion - Accueil Telephonique', 
 	'Gestion Assurances', 'Gestion Relation Clienteles', 'Gestion Renault', 'Japon', 'Médical',
@@ -267,4 +267,4 @@ def extract_mean_std(data):
 
 if __name__ == '__main__':
     os.chdir("/home/nicolas/Documents/INF554 - Machine Learning/AXA Data Challenge")
-    read_file_content(20000, "train_2011_2012_2013.csv", "submission.txt")
+    read_file_content("train_2011_2012_2013.csv", "submission.txt", 20000)
