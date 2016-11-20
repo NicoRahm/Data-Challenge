@@ -12,6 +12,7 @@ from learn_xgb import learn_xgb
 import os
 import saveload_models as slmod
 
+# Working directory to change 
 os.chdir("/home/nicolas/Documents/INF554 - Machine Learning/AXA Data Challenge")
 name = input("Enter the name of the models to save (Enter to skip saving):")
 
@@ -24,8 +25,7 @@ ass = ['CMS', 'Crises', 'Domicile', 'Gestion', 'Gestion - Accueil Telephonique',
 l = len(ass)
 
 features_data, rcvcall_data, preproc_data = load_data("train_2011_2012_2013.csv",
-                                                      ass,
-                                                      20000)
+                                                      ass)
 
 
 ## Learning algorithm 
