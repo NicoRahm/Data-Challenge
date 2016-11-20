@@ -41,6 +41,12 @@ def read_file_content(nrows, path_train, filename):
 
 	print("Starting the features extraction")
 
+	#Initializing the cols
+	
+	date_list = []
+
+
+
 	for line in content:
 
 		if (skip):
@@ -75,16 +81,19 @@ def read_file_content(nrows, path_train, filename):
 				mean = mean_ass[ass_index][weekday]
 				std = std_ass[ass_index][weekday]
 
+				feature.append(date)
 				feature.append(day_off)
 				feature.append(we)
+				feature.append(assignment)
 				feature.append(jour)
 				feature.append(nuit)
-				feature.append(date)
 				feature.append(weekday)
 				feature.append(hour)
 				feature.append(month)
 				feature.append(mean)
 				feature.append(std)
+
+				date_list.append(date)
 
 				test_matrix.append(feature)
 
@@ -95,7 +104,18 @@ def read_file_content(nrows, path_train, filename):
 	#print (found_ass)
 	print("There are %d vectors" % len(test_matrix))
 
-	return test_matrix
+	dataFrame = pd.DataFrame(test_matrix, index = date_list,  columns = ['DATE', 'DAY_OFF', 'WEEK_END', 
+                'ASS_ASSIGNMENT','JOUR', 'NUIT', 'WEEKDAY', 'HOUR', 'MONTH', 'WEEKDAY_MEAN', 'WEEKDAY_STD'])
+
+	test_matrix_by_ass = []
+
+	for ass_assign in ass:
+		print(ass_assign)
+		test_matrix_by_ass.append(dataFrame.loc[dataFrame.loc[:,"ASS_ASSIGNMENT"] == ass_assign, :])
+
+	print(test_matrix_by_ass)
+
+	return test_matrix_by_ass
 			
 
 
