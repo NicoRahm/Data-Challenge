@@ -12,6 +12,7 @@ import load_test as lt
 import xgboost as xgb
 import sklearn as skl
 import os
+import pandas as pd
 
 load = input("Load test data?(y/[n])")
 
@@ -34,7 +35,16 @@ if (name != ''):
     print("Loading models")
     models = slmod.load_multiple_xgb(ass, name)
 
+prediction = []
 
+l = len(ass)
+for i in range(l): 
+    print("Prediction for n°" + str(i+1) + "/" + str(l))
+    prediction.append(pd.DataFrame(models.loc[ass[i]][0].predict(test.loc[ass[i]][0])))
+    prediction[i].index = test.loc[ass[i]][0].index
+    prediction[i] = prediction[i].apply(int, 1)
+
+prediction = pd.DataFrame(prediction, index = ass)
 
 
 
