@@ -120,6 +120,7 @@ def load_data(path, ass, nrows = None):
         preproc_data[i].loc[:,"MONTH"] = dates.apply(extract_month, 1)
         
         preproc_data[i].loc[:,"DATE"] = dates
+        preproc_data[i].index = dates
     
     #print(used_data.describe())
     
@@ -140,7 +141,6 @@ def load_data(path, ass, nrows = None):
 #        print(len(features_data))
 #    rcvcall_data[2].plot()
     ## Cleaning the data 
-    
     
     
     
