@@ -106,12 +106,14 @@ def read_file_content(path_train, filename, nrows = None):
 
 	dataFrame = pd.DataFrame(test_matrix, index = date_list,  columns = ['DATE', 'DAY_OFF', 'WEEK_END', 
                 'ASS_ASSIGNMENT','JOUR', 'NUIT', 'WEEKDAY', 'HOUR', 'MONTH', 'WEEKDAY_MEAN', 'WEEKDAY_STD'])
-	dataFrame.drop('DATE')
+	
 	test_matrix_by_ass = []
-
+	i = 0
 	for ass_assign in ass:
 #		print(ass_assign)
 		test_matrix_by_ass.append(dataFrame.loc[dataFrame.loc[:,"ASS_ASSIGNMENT"] == ass_assign, :])
+		test_matrix_by_ass[i].drop(['DATE', 'ASS_ASSIGNMENT'], 1, inplace = True)
+		i+=1
 
 	test_matrix_by_ass = pd.DataFrame(test_matrix_by_ass)
 	test_matrix_by_ass.index = ass         
