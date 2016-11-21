@@ -124,14 +124,14 @@ def read_file_content(nrows, path_train, filename):
                 'ASS_ASSIGNMENT','JOUR', 'NUIT', 'WEEKDAY', 'HOUR', 'MONTH', 'WEEKDAY_MEAN', 'WEEKDAY_STD', 'RCV_7DAY'])
 
 	test_matrix_by_ass = []
-
+	i = 0
 	for ass_assign in ass:
 		test_matrix_by_ass.append(dataFrame.loc[dataFrame.loc[:,"ASS_ASSIGNMENT"] == ass_assign, :])
-
+		test_matrix_by_ass[i].drop(['DATE', 'ASS_ASSIGNMENT'], 1, inplace = True)	      
+		i+=1
 	a = pd.DataFrame(test_matrix_by_ass, index = ass)
 	#print(a.loc[ass[4], :])
-
-	return test_matrix_by_ass
+	return a
 			
 
 
@@ -139,8 +139,8 @@ def return_day_night(time_full):
 
 	time = time_full.split(" ")
 	hour_min = (time[0].split("-"))
-	hour_proper = hour_min[0]
-	minutes = hour_min[1]
+	hour_proper = int(hour_min[0])
+	minutes = int(hour_min[1])
 
 	if (hour_proper >= 7 and minutes >= 30 and hour_proper < 23):
 		jour = 1
@@ -305,5 +305,5 @@ def extract_mean_std(data):
 #FOR TESTING"
 
 if __name__ == '__main__':
-
-	read_file_content(200000, "train_2011_2012_2013.csv", "submission.txt")
+	os.chdir("/home/nicolas/Documents/INF554 - Machine Learning/AXA Data Challenge")
+	read_file_content(20000, "train_2011_2012_2013.csv", "submission.txt")
