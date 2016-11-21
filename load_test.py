@@ -304,7 +304,6 @@ def extract_mean_std(data):
 
 #FOR TESTING"
 
-
 if __name__ == '__main__':
 
 	read_file_content(200000, "train_2011_2012_2013.csv", "submission.txt")
