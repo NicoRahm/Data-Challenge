@@ -23,7 +23,7 @@ if (load == 'y'):
     
     print("Loading test data...")
     
-    test = lt.read_file_content("train_2011_2012_2013.csv", "submission.txt")
+    test = lt.read_file_content(None, "train_2011_2012_2013.csv", "submission.txt")
 
 ass = ['CMS', 'Crises', 'Domicile', 'Gestion', 'Gestion - Accueil Telephonique', 
 	'Gestion Assurances', 'Gestion Relation Clienteles', 'Gestion Renault', 'Japon', 'Médical',
@@ -43,8 +43,10 @@ l = len(ass)
 for i in range(l): 
     print("Prediction for model n°" + str(i+1) + "/" + str(l))
     prediction.append(pd.DataFrame(models.loc[ass[i]][0].predict(test.loc[ass[i]][0])))
+#    print(prediction[i])
     prediction[i].index = test.loc[ass[i]][0].index
-    prediction[i] = prediction[i].apply(int, 1)
+    prediction[i] = prediction[i]*norm[i]
+    prediction[i] = prediction[i].apply(float, 1)
 
 prediction = pd.DataFrame(prediction, index = ass)
 print("Done\n")
