@@ -155,7 +155,7 @@ def load_data(path, ass, nrows = None):
         preproc_data[i].loc[:, "WEEKDAY_MEAN"] = m
         preproc_data[i].loc[:, "WEEKDAY_STD"] = s
         
-        print("Computing hourly means...")
+        print("Retrieving past data...")
         y = pd.DataFrame(rcvcall)
         y.loc[:,"HOUR"] = hours
         y.index = dates
@@ -176,10 +176,10 @@ def load_data(path, ass, nrows = None):
         n_mean = max(features_data[i].loc[:,"WEEKDAY_MEAN"])
         n_std = max(features_data[i].loc[:,"WEEKDAY_STD"])
         norm.append(n_call)
-        rcvcall_data[i] /= norm[i]
-        features_data[i].loc[:,'RCV_7DAY'] /= n_call[i]
-        features_data[i].loc[:,'WEEKDAY_MEAN'] /= n_mean[i]
-        features_data[i].loc[:,'WEEKDAY_STD'] /= n_std[i]
+        rcvcall_data[i] /= n_call
+        features_data[i].loc[:,'RCV_7DAY'] /= n_call
+        features_data[i].loc[:,'WEEKDAY_MEAN'] /= n_mean
+        features_data[i].loc[:,'WEEKDAY_STD'] /= n_std
     
     
     
