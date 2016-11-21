@@ -8,6 +8,7 @@ Created on Fri Nov  4 19:16:46 2016
 import pandas as pd
 import numpy as np
 import datetime as dt
+from functools import partial
 
 
 def extract_date(string):
@@ -22,8 +23,27 @@ def extract_hour(date):
     
 def extract_month(date):
     return(date.month)
-    
+   
+def extract_year(date):
+    return(date.year)
 
+def hourlymean_past2weeks(date, y):
+    
+    nday_before = 7
+    ysel = y.loc[(y.index > date - dt.timedelta(nday_before))]
+    ysel = ysel.loc[(ysel.index < date)]
+    h = extract_hour(date)
+    if (len(ysel.loc[ysel.loc[:,'HOUR'] == h]) < 0):
+        return(0)
+    else: 
+        return(ysel.loc[ysel.loc[:,'HOUR'] == h].loc[:,"CSPL_RECEIVED_CALLS"].mean())
+
+def lastvalue(date, y):
+    try: 
+        v = y.loc[date - dt.timedelta(14)]["CSPL_RECEIVED_CALLS"]
+    except KeyError:
+        v = 0
+    return(v)
 def load_data(path, ass, nrows = None):  
 
     ## Loading the data 
@@ -82,6 +102,7 @@ def load_data(path, ass, nrows = None):
     preproc_data = []
     rcvcall_data = []
     features_data = []
+    norm = []
 
     for i in range(l):
         
@@ -115,22 +136,31 @@ def load_data(path, ass, nrows = None):
         
         #print(dates)
         
+        hours = dates.apply(extract_hour, 1)
         preproc_data[i].loc[:,"WEEKDAY"] = dates.apply(extract_weekday, 1)
-        preproc_data[i].loc[:,"HOUR"] = dates.apply(extract_hour, 1)
+        preproc_data[i].loc[:,"HOUR"] = hours
         preproc_data[i].loc[:,"MONTH"] = dates.apply(extract_month, 1)
-        
+        preproc_data[i].loc[:,"MONTH_YEAR"] = preproc_data[i].loc[:,"MONTH"] + dates.apply(extract_year, 1)
+
         preproc_data[i].loc[:,"DATE"] = dates
         preproc_data[i].index = dates
-    
+        
+
     #print(used_data.describe())
     
     # Paramètre moyenne et variance de la cible sur chaque jour de la semaine
     
-        m = preproc_data[i].groupby(["WEEKDAY"])["CSPL_RECEIVED_CALLS"].transform(np.mean)
-        s = preproc_data[i].groupby(["WEEKDAY"])["CSPL_RECEIVED_CALLS"].transform(np.std)
+        m = preproc_data[i].groupby(["WEEKDAY", "MONTH_YEAR"])["CSPL_RECEIVED_CALLS"].transform(np.mean)
+        s = preproc_data[i].groupby(["WEEKDAY", "MONTH_YEAR"])["CSPL_RECEIVED_CALLS"].transform(np.std)
         preproc_data[i].loc[:, "WEEKDAY_MEAN"] = m
         preproc_data[i].loc[:, "WEEKDAY_STD"] = s
-
+        
+        print("Computing hourly means...")
+        y = pd.DataFrame(rcvcall)
+        y.loc[:,"HOUR"] = hours
+        y.index = dates
+        fun = partial(lastvalue, y = y)
+        preproc_data[i].loc[:, 'RCV_7DAY'] = dates.apply(fun, 1)
     #print(preproc_data) 
         rcvcall_data.append(preproc_data[i]['CSPL_RECEIVED_CALLS'])
         features_data.append(preproc_data[i])
@@ -140,11 +170,20 @@ def load_data(path, ass, nrows = None):
 #        print(len(rcvcall_data))
 #        print(len(features_data))
 #    rcvcall_data[2].plot()
-    ## Cleaning the data 
+        ## Normalization 
+        print("Normalizing the data...")
+        n_call = max(rcvcall_data[i])
+        n_mean = max(features_data[i].loc[:,"WEEKDAY_MEAN"])
+        n_std = max(features_data[i].loc[:,"WEEKDAY_STD"])
+        norm.append(n_call)
+        rcvcall_data[i] /= norm[i]
+        features_data[i].loc[:,'RCV_7DAY'] /= n_call[i]
+        features_data[i].loc[:,'WEEKDAY_MEAN'] /= n_mean[i]
+        features_data[i].loc[:,'WEEKDAY_STD'] /= n_std[i]
     
     
     
-    return features_data, rcvcall_data, preproc_data
+    return features_data, rcvcall_data, preproc_data, norm
     
 #FOR TESTING"
 
