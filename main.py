@@ -16,7 +16,7 @@ import saveload_models as slmod
 os.chdir("/home/nicolas/Documents/INF554 - Machine Learning/AXA Data Challenge")
 name = input("Enter the name of the models to save (Enter to skip saving):")
 
-print("Importing the data...")
+import_data = input("Do I have to import the data?y/[n] ")
 
 ass = ['CMS', 'Crises', 'Domicile', 'Gestion', 'Gestion - Accueil Telephonique', 
 	'Gestion Assurances', 'Gestion Relation Clienteles', 'Gestion Renault', 'Japon', 'Médical',
@@ -24,10 +24,13 @@ ass = ['CMS', 'Crises', 'Domicile', 'Gestion', 'Gestion - Accueil Telephonique',
 	 'Tech. Total', 'Mécanicien', 'CAT', 'Manager', 'Gestion Clients', 'Gestion DZ', 'RTC', 'Prestataires']
 l = len(ass)
 
-features_data, rcvcall_data, preproc_data = load_data("train_2011_2012_2013.csv",
-                                                      ass)
+if (import_data == 'y'):
 
+    print("Importing the data...")
+    features_data, rcvcall_data, preproc_data, norm = load_data("train_2011_2012_2013.csv",
+                                                          ass)
 
+    
 ## Learning algorithm 
 print("Fitting the data...")
 models = list(range(l))
@@ -48,11 +51,11 @@ if (name != ''):
 
 print("Visualizing results...")
 
-n_to_vis = 3
+n_to_vis = 17
 ass_to_vis = ass[n_to_vis]
 
-X_test = features_data[n_to_vis][features_data[n_to_vis].index < dt.datetime(2011, 2, 16)]
-y_test = rcvcall_data[n_to_vis][rcvcall_data[n_to_vis].index < dt.datetime(2011, 2, 16)]
+X_test = features_data[n_to_vis][features_data[n_to_vis].index > dt.datetime(2013, 12, 10)]
+y_test = rcvcall_data[n_to_vis][rcvcall_data[n_to_vis].index > dt.datetime(2013, 12, 10)]
                                                                          
 y_pred = pd.DataFrame(models.loc[ass_to_vis]['Models'].predict(X_test))
 
@@ -61,6 +64,9 @@ y_test = pd.DataFrame(y_test)
 
 y = pd.concat([y_test, y_pred], axis = 1)
 y.columns = ["TRUE_VALUE", "PRED_VALUE"]
+
+y.loc[:,"PRED_VALUE"]*=norm[n_to_vis]
+y.loc[:,"TRUE_VALUE"]*=norm[n_to_vis]
 
 y.plot()
 
