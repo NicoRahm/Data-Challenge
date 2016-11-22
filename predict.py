@@ -15,6 +15,11 @@ import os
 import pandas as pd
 import write_test_answer as wta
 
+ass = ['CMS', 'Crises', 'Domicile', 'Gestion', 'Gestion - Accueil Telephonique', 
+	'Gestion Assurances', 'Gestion Relation Clienteles', 'Gestion Renault', 'Japon', 'Médical',
+	 'Nuit', 'RENAULT', 'Regulation Medicale', 'SAP', 'Services', 'Tech. Axa', 'Tech. Inter', 'Téléphonie', 
+	 'Tech. Total', 'Mécanicien', 'CAT', 'Manager', 'Gestion Clients', 'Gestion DZ', 'RTC', 'Prestataires']
+
 load = input("Load test data?(y/[n])")
 
 if (load == 'y'):
@@ -22,19 +27,18 @@ if (load == 'y'):
     os.chdir("/home/nicolas/Documents/INF554 - Machine Learning/AXA Data Challenge")
     
     print("Loading test data...")
-    
-    test = lt.read_file_content(None, "train_2011_2012_2013.csv", "submission.txt")
-
-ass = ['CMS', 'Crises', 'Domicile', 'Gestion', 'Gestion - Accueil Telephonique', 
-	'Gestion Assurances', 'Gestion Relation Clienteles', 'Gestion Renault', 'Japon', 'Médical',
-	 'Nuit', 'RENAULT', 'Regulation Medicale', 'SAP', 'Services', 'Tech. Axa', 'Tech. Inter', 'Téléphonie', 
-	 'Tech. Total', 'Mécanicien', 'CAT', 'Manager', 'Gestion Clients', 'Gestion DZ', 'RTC', 'Prestataires']
 
 name = input("Name of the models to load (Enter to skip) : ")
 
 if (name != ''):
     print("Loading models")
     models = slmod.load_multiple_xgb(ass, name)
+    
+    test = lt.read_file_content(None, "train_2011_2012_2013.csv", "submission.txt")
+
+
+
+
 
 print("Predicting...")
 prediction = []
