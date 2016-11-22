@@ -63,6 +63,7 @@ def read_file_content(nrows, path_train, filename):
 			weekday = extract_weekday(date)
 			hour = extract_hour(date)
 			month = extract_month(date)
+               year = extract_year(date)
 
 			day_off = is_day_off(splitted[0], weekday)
 
@@ -80,29 +81,35 @@ def read_file_content(nrows, path_train, filename):
 
 			try:
 				ass_index = ass.index(assignment)
-				mean = mean_ass[ass_index][weekday]
-				std = std_ass[ass_index][weekday]
+				mean = mean_ass[ass_index][month+year]
+				std = std_ass[ass_index][month+year]
 
 				week_before = date - dt.timedelta(7)
+				two_weeks_before = date - dt.timedelta(14)
 
 				#print(week_before)
 				try:
 					#test = dt.datetime(2011,1,1,0,30,0)
 					alpha = rcvcalls[ass_index].loc[week_before]['CSPL_RECEIVED_CALLS']
+					try:
+						beta = rcvcalls[ass_index].loc[two_weeks_before]['CSPL_RECEIVED_CALLS']
+					except:
+						beta = 0
 					#print(alpha)
 
 				except KeyError:
 					alpha = 0
+					beta = 0
 					notFound += 1
 				#print(alpha)
-
+				alpha = (3*alpha + beta)/4
 				feature.append(date)
 				feature.append(day_off)
 				feature.append(we)
 				feature.append(assignment)
-				feature.append(jour)
+#				feature.append(jour)
 				feature.append(nuit)
-				feature.append(weekday)
+#				feature.append(weekday)
 				feature.append(hour)
 				feature.append(month)
 				feature.append(mean)
@@ -121,7 +128,7 @@ def read_file_content(nrows, path_train, filename):
 	print("We didn't find %d dates" % notFound)
 
 	dataFrame = pd.DataFrame(test_matrix, index = date_list,  columns = ['DATE', 'DAY_OFF', 'WEEK_END', 
-                'ASS_ASSIGNMENT','JOUR', 'NUIT', 'WEEKDAY', 'HOUR', 'MONTH', 'WEEKDAY_MEAN', 'WEEKDAY_STD', 'RCV_7DAY'])
+                'ASS_ASSIGNMENT', 'NUIT', 'HOUR', 'MONTH', 'WEEKDAY_MEAN', 'WEEKDAY_STD', 'RCV_7DAY'])
 
 	test_matrix_by_ass = []
 	i = 0
@@ -196,6 +203,9 @@ def extract_hour(date):
 def extract_month(date):
     return(date.month)
 
+def extract_year(date):
+    return(date.year)
+
 def get_day_mean_std(nrows, path, assignments):
 
 	col_loaded = ['DATE', 'ASS_ASSIGNMENT', 'CSPL_RECEIVED_CALLS']
@@ -237,9 +247,10 @@ def get_day_mean_std(nrows, path, assignments):
 		preproc_data[i].loc[:,"MONTH"] = dates.apply(extract_month, 1)
 
 		preproc_data[i].loc[:,"DATE"] = dates
-		m = preproc_data[i].groupby(["WEEKDAY"])["CSPL_RECEIVED_CALLS"]
+		preproc_data[i].loc[:,"MONTH_YEAR"] = preproc_data[i].loc[:,"MONTH"] + dates.apply(extract_year, 1)
+		m = preproc_data[i].groupby(["WEEKDAY", "MONTH_YEAR"])["CSPL_RECEIVED_CALLS"]
 		m = m.transform(np.mean)
-		s = preproc_data[i].groupby(["WEEKDAY"])["CSPL_RECEIVED_CALLS"].transform(np.std)
+		s = preproc_data[i].groupby(["WEEKDAY", "MONTH_YEAR"])["CSPL_RECEIVED_CALLS"].transform(np.std)
 		preproc_data[i].loc[:, "WEEKDAY_MEAN"] = m
 		preproc_data[i].loc[:, "WEEKDAY_STD"] = s
 		#print preproc_data[i]
