@@ -39,11 +39,18 @@ def hourlymean_past2weeks(date, y):
         return(ysel.loc[ysel.loc[:,'HOUR'] == h].loc[:,"CSPL_RECEIVED_CALLS"].mean())
 
 def lastvalue(date, y):
+    nday_before = 7
     try: 
-        v = y.loc[date - dt.timedelta(14)]["CSPL_RECEIVED_CALLS"]
+        v = y.loc[date - dt.timedelta(nday_before)]["CSPL_RECEIVED_CALLS"]
+        try:
+            w = y.loc[date - 2*dt.timedelta(nday_before)]["CSPL_RECEIVED_CALLS"]
+        except:
+            w = v
     except KeyError:
-        v = 0
-    return(v)
+        v = y.loc[date]["CSPL_RECEIVED_CALLS"] + np.random.normal(scale = 3)
+        w = v
+    return((3*v + w)/4)
+
 def load_data(path, ass, nrows = None):  
 
     ## Loading the data 
@@ -72,18 +79,18 @@ def load_data(path, ass, nrows = None):
     
     tper_team = data['TPER_TEAM'].values.tolist()
     
-    jour = []
+#    jour = []
     nuit = []
     
     for i in range(nrows):
         if(tper_team[i] == "Jours"): 
-            jour.append(1)
+#            jour.append(1)
             nuit.append(0)
         else:
             nuit.append(1)
-            jour.append(0)
+#            jour.append(0)
         
-    data['JOUR'] = jour
+#    data['JOUR'] = jour
     data['NUIT'] = nuit
                      
     ## Selecting Data 
@@ -91,7 +98,7 @@ def load_data(path, ass, nrows = None):
     print("Selecting used Data.")
     
     col_used = ['DATE', 'DAY_OFF', 'WEEK_END', 
-                'ASS_ASSIGNMENT','JOUR', 'NUIT', 'CSPL_RECEIVED_CALLS']     
+                'ASS_ASSIGNMENT', 'NUIT', 'CSPL_RECEIVED_CALLS']     
     
     data = data[col_used]
     data.sort_values(["ASS_ASSIGNMENT", "DATE"], inplace = True)
@@ -164,22 +171,31 @@ def load_data(path, ass, nrows = None):
     #print(preproc_data) 
         rcvcall_data.append(preproc_data[i]['CSPL_RECEIVED_CALLS'])
         features_data.append(preproc_data[i])
-        features_data[i].drop(["CSPL_RECEIVED_CALLS", "DATE"], 1, inplace = True)
+        features_data[i].drop(["CSPL_RECEIVED_CALLS", "DATE", "WEEKDAY", "MONTH_YEAR"], 1, inplace = True)
         
 #        print(len(preproc_data))
 #        print(len(rcvcall_data))
 #        print(len(features_data))
 #    rcvcall_data[2].plot()
+
+
         ## Normalization 
         print("Normalizing the data...")
         n_call = max(rcvcall_data[i])
+#        std_call = rcvcall_data[i].std()
         n_mean = max(features_data[i].loc[:,"WEEKDAY_MEAN"])
         n_std = max(features_data[i].loc[:,"WEEKDAY_STD"])
         norm.append(n_call)
-        rcvcall_data[i] /= n_call
-        features_data[i].loc[:,'RCV_7DAY'] /= n_call
-        features_data[i].loc[:,'WEEKDAY_MEAN'] /= n_mean
-        features_data[i].loc[:,'WEEKDAY_STD'] /= n_std
+#        norm.append(std_call)
+        if n_call!=0:
+#            rcvcall_data[i] /= std_call
+            rcvcall_data[i] /= n_call
+#            features_data[i].loc[:,'RCV_7DAY'] /= std_call
+            features_data[i].loc[:,'RCV_7DAY'] /= n_call
+        if n_mean != 0:
+            features_data[i].loc[:,'WEEKDAY_MEAN'] /= n_mean
+        if n_std != 0:
+            features_data[i].loc[:,'WEEKDAY_STD'] /= n_std
     
     
     
@@ -195,7 +211,7 @@ if __name__ == '__main__':
 	 'Nuit', 'RENAULT', 'Regulation Medicale', 'SAP', 'Services', 'Tech. Axa', 'Tech. Inter', 'Téléphonie', 
 	 'Tech. Total', 'Mécanicien', 'CAT', 'Manager', 'Gestion Clients', 'Gestion DZ', 'RTC', 'Prestataires']
     
-    features_data, rcvcall_data, preproc_data = load_data("train_2011_2012_2013.csv",
+    features_data, rcvcall_data, preproc_data, norm = load_data("train_2011_2012_2013.csv",
                                                           ass = ass,
                                                           nrows = 200000)
     
