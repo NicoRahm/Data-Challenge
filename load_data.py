@@ -211,7 +211,7 @@ if __name__ == '__main__':
 	 'Nuit', 'RENAULT', 'Regulation Medicale', 'SAP', 'Services', 'Tech. Axa', 'Tech. Inter', 'Téléphonie', 
 	 'Tech. Total', 'Mécanicien', 'CAT', 'Manager', 'Gestion Clients', 'Gestion DZ', 'RTC', 'Prestataires']
     
-    features_data, rcvcall_data, preproc_data = load_data("train_2011_2012_2013.csv",
+    features_data, rcvcall_data, preproc_data, norm = load_data("train_2011_2012_2013.csv",
                                                           ass = ass,
                                                           nrows = 200000)
     
