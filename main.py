@@ -30,13 +30,17 @@ if (import_data == 'y'):
     features_data, rcvcall_data, preproc_data, norm = load_data("train_2011_2012_2013.csv",
                                                           ass)
 
-    
+    for i in range(len(ass)):
+        features_data[i].drop(["CSPL_RECEIVED_CALLS"], 1, inplace = True)
 ## Learning algorithm 
 print("Fitting the data...")
 models = list(range(l))
-for i in range(l):
-    print("Fitting n°" + str(i + 1) + "/" + str(l))
+t = range(len(ass))
+for i in t:
+    print("Fitting n°" + str(i + 1) + "/" + str(l) + " : " + ass[i])
     models[i], error = learn_xgb(features_data[i], rcvcall_data[i])
+#    for j in range(24):
+#        models[i][j], error = learn_xgb(features_data[i].loc[features_data[i].loc[:,"HOUR"] == j], rcvcall_data[i].loc[features_data[i].loc[:,"HOUR"] == j])
 
 
 models = pd.DataFrame(models)
@@ -50,25 +54,28 @@ if (name != ''):
 ## Result visualization 
 
 print("Visualizing results...")
-
-n_to_vis = 17
-ass_to_vis = ass[n_to_vis]
-
-X_test = features_data[n_to_vis][features_data[n_to_vis].index > dt.datetime(2013, 12, 10)]
-y_test = rcvcall_data[n_to_vis][rcvcall_data[n_to_vis].index > dt.datetime(2013, 12, 10)]
-                                                                         
-y_pred = pd.DataFrame(models.loc[ass_to_vis]['Models'].predict(X_test))
-
-y_pred.index = y_test.index
-y_test = pd.DataFrame(y_test)
-
-y = pd.concat([y_test, y_pred], axis = 1)
-y.columns = ["TRUE_VALUE", "PRED_VALUE"]
-
-y.loc[:,"PRED_VALUE"]*=norm[n_to_vis]
-y.loc[:,"TRUE_VALUE"]*=norm[n_to_vis]
-
-y.plot()
+vis = [17]
+for i in vis:
+    print("Results for " + ass[i])
+    n_to_vis = i
+    ass_to_vis = ass[n_to_vis]
+    
+    X_test = features_data[n_to_vis][features_data[n_to_vis].index > dt.datetime(2013, 10, 18)]
+    y_test = rcvcall_data[n_to_vis][rcvcall_data[n_to_vis].index > dt.datetime(2013, 10, 18)]
+    X_test = X_test[X_test.index < dt.datetime(2013, 11, 3)]     
+    y_test = y_test[y_test.index < dt.datetime(2013, 11, 3)]                                                                       
+    y_pred = pd.DataFrame(models.loc[ass_to_vis]['Models'].predict(X_test))
+    
+    y_pred.index = y_test.index
+    y_test = pd.DataFrame(y_test)
+    
+    y = pd.concat([y_test, y_pred], axis = 1)
+    y.columns = ["TRUE_VALUE", "PRED_VALUE"]
+    
+    y.loc[:,"PRED_VALUE"]*=norm[n_to_vis]
+    y.loc[:,"TRUE_VALUE"]*=norm[n_to_vis]
+    
+    y.plot()
 
 
 

@@ -8,7 +8,8 @@ alpha = -0.1
 import numpy as np
 
 def linex(y_true, y_pred):
-    
+    y_true = np.asarray(y_true)
+    y_pred = np.asarray(y_pred)
     grad = (-alpha*np.exp(alpha*(y_true-y_pred)) + alpha)
     hess = alpha*alpha*np.exp(alpha*(y_true-y_pred))
     

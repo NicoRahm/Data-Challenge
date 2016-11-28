@@ -5,10 +5,8 @@ Created on Fri Nov  4 18:55:58 2016
 @author: Team BigInJapan
 """
 
-import pandas as pd
 import numpy as np
-import sklearn as skl
-from linex import linex, loss_linex
+from linex import loss_linex
 
 
 def evalerror(y_pred, y_test):

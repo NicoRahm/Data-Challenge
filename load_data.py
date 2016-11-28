@@ -9,7 +9,10 @@ import pandas as pd
 import numpy as np
 import datetime as dt
 from functools import partial
+from workalendar.europe import France
 
+
+cal = France()
 
 def extract_date(string):
     d = dt.datetime.strptime(string, "%Y-%m-%d %H:%M:%S.000")
@@ -38,6 +41,14 @@ def hourlymean_past2weeks(date, y):
     else: 
         return(ysel.loc[ysel.loc[:,'HOUR'] == h].loc[:,"CSPL_RECEIVED_CALLS"].mean())
 
+def is_day_off(date):
+#    weekday = extract_weekday(date)
+    
+    if (cal.is_working_day(date)):
+        return 1
+    else:
+        return 0        
+        
 def lastvalue(date, y):
     nday_before = 7
     try: 
@@ -141,50 +152,66 @@ def load_data(path, ass, nrows = None):
         # Paramètres pour les dates
         dates = preproc_data[i]['DATE'].apply(extract_date, 1)
         
+        
         #print(dates)
         
         hours = dates.apply(extract_hour, 1)
         preproc_data[i].loc[:,"WEEKDAY"] = dates.apply(extract_weekday, 1)
         preproc_data[i].loc[:,"HOUR"] = hours
         preproc_data[i].loc[:,"MONTH"] = dates.apply(extract_month, 1)
-        preproc_data[i].loc[:,"MONTH_YEAR"] = preproc_data[i].loc[:,"MONTH"] + dates.apply(extract_year, 1)
-
+        preproc_data[i].loc[:,"MONTH_YEAR"] = preproc_data[i].loc[:,"MONTH"] + (dates.apply(extract_year, 1)-2011)*12 - 1
+        preproc_data[i].loc[:,"DAY_OFF"] = dates.apply(is_day_off, 1)
         preproc_data[i].loc[:,"DATE"] = dates
-        preproc_data[i].index = dates
+#        preproc_data[i].index = dates
         
 
     #print(used_data.describe())
     
     # Paramètre moyenne et variance de la cible sur chaque jour de la semaine
     
-        m = preproc_data[i].groupby(["WEEKDAY", "MONTH_YEAR"])["CSPL_RECEIVED_CALLS"].transform(np.mean)
-        s = preproc_data[i].groupby(["WEEKDAY", "MONTH_YEAR"])["CSPL_RECEIVED_CALLS"].transform(np.std)
-        preproc_data[i].loc[:, "WEEKDAY_MEAN"] = m
-        preproc_data[i].loc[:, "WEEKDAY_STD"] = s
+#        m = preproc_data[i].groupby(["MONTH_YEAR", "WEEKDAY"])["CSPL_RECEIVED_CALLS"].transform(np.mean)
+#        s = preproc_data[i].groupby(["MONTH_YEAR", "WEEKDAY"])["CSPL_RECEIVED_CALLS"].transform(np.std)
+#        preproc_data[i].loc[:, "WEEKDAY_MEAN"] = m
+#        preproc_data[i].loc[:, "WEEKDAY_STD"] = s
         
         print("Retrieving past data...")
-        y = pd.DataFrame(rcvcall)
-        y.loc[:,"HOUR"] = hours
-        y.index = dates
-        fun = partial(lastvalue, y = y)
-        preproc_data[i].loc[:, 'RCV_7DAY'] = dates.apply(fun, 1)
+        RCV_7DAYS = pd.DataFrame(rcvcall)
+        RCV_14DAYS = pd.DataFrame(rcvcall)
+        RCV_7DAYS.loc[:,"DATE"] = dates + dt.timedelta(7)
+        RCV_14DAYS.loc[:,"DATE"] = dates + dt.timedelta(14)
+        RCV_7DAYS = RCV_7DAYS[RCV_7DAYS.loc[:,"DATE"] < max(dates)]
+        RCV_14DAYS = RCV_14DAYS[RCV_14DAYS.loc[:,"DATE"] < max(dates)]
+
+#        y.loc[:,"HOUR"] = hours
+#        y.index = dates
+#        fun = partial(lastvalue, y = y)
+#        preproc_data[i].loc[:, 'RCV_7DAY'] = dates.apply(fun, 1)
+        preproc_data[i] = pd.merge(preproc_data[i], RCV_7DAYS, on = "DATE", suffixes = ('', '_x'), how = 'left')
+        preproc_data[i] = pd.merge(preproc_data[i], RCV_14DAYS, on = "DATE", suffixes = ('', '_y'), how = 'left')        
+        preproc_data[i] = pd.concat([preproc_data[i], pd.get_dummies(preproc_data[i].loc[:,'WEEKDAY'])], axis = 1, join = 'inner')
+        
+        preproc_data[i].rename(index=str, columns={'CSPL_RECEIVED_CALLS_x': 'RCV_7DAY','CSPL_RECEIVED_CALLS_y': 'RCV_14DAY', 0: "Lundi", 1: "Mardi", 2: "Mercredi", 3: "Jeudi", 4: "Vendredi", 5: "Samedi", 6 : "Dimanche"}, inplace = True)
+#        print(preproc_data[i])
+#        print(preproc_data[i])
     #print(preproc_data) 
+        preproc_data[i].index = dates
         rcvcall_data.append(preproc_data[i]['CSPL_RECEIVED_CALLS'])
         features_data.append(preproc_data[i])
-        features_data[i].drop(["CSPL_RECEIVED_CALLS", "DATE", "WEEKDAY", "MONTH_YEAR"], 1, inplace = True)
         
+        features_data[i].drop(["CSPL_RECEIVED_CALLS", "WEEKDAY", "DATE", "MONTH_YEAR"], 1, inplace = True)
+#        features_data[i].drop(["CSPL_RECEIVED_CALLS"], 1, inplace = True)
 #        print(len(preproc_data))
 #        print(len(rcvcall_data))
 #        print(len(features_data))
 #    rcvcall_data[2].plot()
-
+        
 
         ## Normalization 
         print("Normalizing the data...")
         n_call = max(rcvcall_data[i])
 #        std_call = rcvcall_data[i].std()
-        n_mean = max(features_data[i].loc[:,"WEEKDAY_MEAN"])
-        n_std = max(features_data[i].loc[:,"WEEKDAY_STD"])
+#        n_mean = max(features_data[i].loc[:,"WEEKDAY_MEAN"])
+#        n_std = max(features_data[i].loc[:,"WEEKDAY_STD"])
         norm.append(n_call)
 #        norm.append(std_call)
         if n_call!=0:
@@ -192,14 +219,15 @@ def load_data(path, ass, nrows = None):
             rcvcall_data[i] /= n_call
 #            features_data[i].loc[:,'RCV_7DAY'] /= std_call
             features_data[i].loc[:,'RCV_7DAY'] /= n_call
-        if n_mean != 0:
-            features_data[i].loc[:,'WEEKDAY_MEAN'] /= n_mean
-        if n_std != 0:
-            features_data[i].loc[:,'WEEKDAY_STD'] /= n_std
+            features_data[i].loc[:,'RCV_14DAY'] /= n_call
+#        if n_mean != 0:
+#            features_data[i].loc[:,'WEEKDAY_MEAN'] /= n_mean
+#        if n_std != 0:
+#            features_data[i].loc[:,'WEEKDAY_STD'] /= n_std
     
     
     
-    return features_data, rcvcall_data, preproc_data, norm
+    return(features_data, rcvcall_data, preproc_data, norm)
     
 #FOR TESTING"
 
@@ -211,7 +239,7 @@ if __name__ == '__main__':
 	 'Nuit', 'RENAULT', 'Regulation Medicale', 'SAP', 'Services', 'Tech. Axa', 'Tech. Inter', 'Téléphonie', 
 	 'Tech. Total', 'Mécanicien', 'CAT', 'Manager', 'Gestion Clients', 'Gestion DZ', 'RTC', 'Prestataires']
     
-    features_data, rcvcall_data, preproc_data, norm = load_data("train_2011_2012_2013.csv",
+    features_data_test, rcvcall_data_test, preproc_data_test, norm_test = load_data("train_2011_2012_2013.csv",
                                                           ass = ass,
                                                           nrows = 200000)
     

@@ -15,6 +15,8 @@ from workalendar.europe import France
 import string
 
 
+cal = France()
+
 def get_file_content(filename):
 
 	with open(filename, "r") as fichier_test:
@@ -22,7 +24,7 @@ def get_file_content(filename):
 		print("Reading File")
 		return content
 
-def read_file_content(nrows, path_train, filename):
+def read_file_content(nrows, path_train, filename, rcvcall_data, preproc_data):
 
 	ass = ['CMS', 'Crises', 'Domicile', 'Gestion', 'Gestion - Accueil Telephonique', 
 	'Gestion Assurances', 'Gestion Relation Clienteles', 'Gestion Renault', 'Japon', 'Médical',
@@ -30,8 +32,9 @@ def read_file_content(nrows, path_train, filename):
 	 'Tech. Total', 'Mécanicien', 'CAT', 'Manager', 'Gestion Clients', 'Gestion DZ', 'RTC', 'Prestataires']
 
 	print("Retrieving mean and std arrays")
-	mean_ass, std_ass, rcvcalls = get_day_mean_std(nrows, path_train, ass)
-
+#	mean_ass, std_ass, rcvcalls, preproc = get_day_mean_std(nrows, path_train, ass)
+	rcvcalls = rcvcall_data  
+	preproc = preproc_data   
 	test_matrix = []
 	found_ass = []
 
@@ -63,7 +66,7 @@ def read_file_content(nrows, path_train, filename):
 			weekday = extract_weekday(date)
 			hour = extract_hour(date)
 			month = extract_month(date)
-               year = extract_year(date)
+			year = extract_year(date)
 
 			day_off = is_day_off(splitted[0], weekday)
 
@@ -81,60 +84,82 @@ def read_file_content(nrows, path_train, filename):
 
 			try:
 				ass_index = ass.index(assignment)
-				mean = mean_ass[ass_index][month+year]
-				std = std_ass[ass_index][month+year]
-
+#				mean = mean_ass[ass_index][month+year]
+#				std = std_ass[ass_index][month+year]
+#				sel = preproc[ass_index].loc[preproc_test[ass_index].loc[:,"MONTH_YEAR"] == month+13*(year-2011)][preproc_test[ass_index].loc[:,"WEEKDAY"] == weekday]
+#				mean = mean_ass[ass_index][month+12*(year-2011)-1, weekday]
+#				std = std_ass[ass_index][month+12*(year-2011)-1, weekday]
 				week_before = date - dt.timedelta(7)
 				two_weeks_before = date - dt.timedelta(14)
 
 				#print(week_before)
-				try:
-					#test = dt.datetime(2011,1,1,0,30,0)
-					alpha = rcvcalls[ass_index].loc[week_before]['CSPL_RECEIVED_CALLS']
-					try:
-						beta = rcvcalls[ass_index].loc[two_weeks_before]['CSPL_RECEIVED_CALLS']
-					except:
-						beta = 0
-					#print(alpha)
-
-				except KeyError:
-					alpha = 0
-					beta = 0
-					notFound += 1
+#				try:
+#					#test = dt.datetime(2011,1,1,0,30,0)
+#					alpha = rcvcalls[ass_index].loc[week_before]['CSPL_RECEIVED_CALLS']
+#					try:
+#						beta = rcvcalls[ass_index].loc[two_weeks_before]['CSPL_RECEIVED_CALLS']
+#					except:
+#						beta = 0
+#					#print(alpha)
+#
+#				except KeyError:
+#					alpha = 0
+#					beta = 0
+#					notFound += 1
 				#print(alpha)
-				alpha = (3*alpha + beta)/4
+#				alpha = (3*alpha + beta)/4
 				feature.append(date)
 				feature.append(day_off)
 				feature.append(we)
 				feature.append(assignment)
 #				feature.append(jour)
 				feature.append(nuit)
-#				feature.append(weekday)
+				feature.append(weekday)
 				feature.append(hour)
 				feature.append(month)
-				feature.append(mean)
-				feature.append(std)
-				feature.append(alpha)
+#				feature.append(mean)
+#				feature.append(std)
+#				feature.append(alpha)
 				date_list.append(date)
-
+				
 				test_matrix.append(feature)
 
 			except ValueError:
 				print("I found smth that is not in the assignment list : %s" % assignment)
-	
+
+    
+    
 	print("Done\n")
 	#print (found_ass)
 	print("There are %d vectors" % len(test_matrix))
 	print("We didn't find %d dates" % notFound)
 
 	dataFrame = pd.DataFrame(test_matrix, index = date_list,  columns = ['DATE', 'DAY_OFF', 'WEEK_END', 
-                'ASS_ASSIGNMENT', 'NUIT', 'HOUR', 'MONTH', 'WEEKDAY_MEAN', 'WEEKDAY_STD', 'RCV_7DAY'])
+                'ASS_ASSIGNMENT', 'NUIT', 'WEEKDAY', 'HOUR', 'MONTH'])
 
 	test_matrix_by_ass = []
 	i = 0
 	for ass_assign in ass:
 		test_matrix_by_ass.append(dataFrame.loc[dataFrame.loc[:,"ASS_ASSIGNMENT"] == ass_assign, :])
-		test_matrix_by_ass[i].drop(['DATE', 'ASS_ASSIGNMENT'], 1, inplace = True)	      
+		RCV_7DAYS = pd.DataFrame(rcvcalls[i])
+		RCV_14DAYS = pd.DataFrame(rcvcalls[i])
+		RCV_7DAYS.loc[:,"DATE"] = rcvcalls[i].index + dt.timedelta(7)
+		RCV_14DAYS.loc[:,"DATE"] = rcvcalls[i].index + dt.timedelta(14)
+		RCV_7DAYS = RCV_7DAYS[RCV_7DAYS.loc[:,"DATE"] < max(rcvcalls[i].index)]
+		RCV_14DAYS = RCV_14DAYS[RCV_14DAYS.loc[:,"DATE"] < max(rcvcalls[i].index)]       
+		
+		test_matrix_by_ass[i] = pd.merge(test_matrix_by_ass[i], RCV_7DAYS, on = "DATE", suffixes = ('', '_x'), how = 'left')
+		test_matrix_by_ass[i] = pd.merge(test_matrix_by_ass[i], RCV_14DAYS, on = "DATE", suffixes = ('', '_y'), how = 'left')        
+		test_matrix_by_ass[i] = pd.concat([test_matrix_by_ass[i], pd.get_dummies(test_matrix_by_ass[i].loc[:,'WEEKDAY'])], axis = 1, join = 'inner')
+		for j in range(7):
+			try:
+				test_matrix_by_ass[i].loc[:,j]
+			except KeyError:
+				test_matrix_by_ass[i].loc[:,j] = pd.DataFrame([0 for i in range(len(rcvcalls[i].index))])		        
+		test_matrix_by_ass[i].rename(index=str, columns={'CSPL_RECEIVED_CALLS': 'RCV_7DAY', 'CSPL_RECEIVED_CALLS_y': 'RCV_14DAY', 0: "Lundi", 1: "Mardi", 2: "Mercredi", 3: "Jeudi", 4: "Vendredi", 5: "Samedi", 6 : "Dimanche"}, inplace = True)
+		test_matrix_by_ass[i].index = test_matrix_by_ass[i].loc[:,'DATE']
+		test_matrix_by_ass[i].drop(['DATE', 'WEEKDAY', 'ASS_ASSIGNMENT'], 1, inplace = True)	 
+		test_matrix_by_ass[i] =  test_matrix_by_ass[i].loc[:,['DAY_OFF', 'WEEK_END', 'NUIT', 'HOUR', 'MONTH', 'RCV_7DAY', 'RCV_14DAY', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']]
 		i+=1
 	a = pd.DataFrame(test_matrix_by_ass, index = ass)
 	#print(a.loc[ass[4], :])
@@ -170,17 +195,17 @@ def return_day_night(time_full):
 
 def is_day_off(date, weekday):
 
-	cal = France()
+	
 	splitted = ((date.split(" "))[0]).split("-")
 	#print(splitted)
 	y = int(splitted[0])
 	m = int(splitted[1])
 	d = int(splitted[2])
 
-	if (cal.is_working_day(dt.date(y,m,d)) and (weekday != 6)):
-		return 0
-	else:
+	if (cal.is_working_day(dt.date(y,m,d))):
 		return 1
+	else:
+		return 0
 
 
 
@@ -247,19 +272,25 @@ def get_day_mean_std(nrows, path, assignments):
 		preproc_data[i].loc[:,"MONTH"] = dates.apply(extract_month, 1)
 
 		preproc_data[i].loc[:,"DATE"] = dates
-		preproc_data[i].loc[:,"MONTH_YEAR"] = preproc_data[i].loc[:,"MONTH"] + dates.apply(extract_year, 1)
-		m = preproc_data[i].groupby(["WEEKDAY", "MONTH_YEAR"])["CSPL_RECEIVED_CALLS"]
-		m = m.transform(np.mean)
-		s = preproc_data[i].groupby(["WEEKDAY", "MONTH_YEAR"])["CSPL_RECEIVED_CALLS"].transform(np.std)
+		preproc_data[i].loc[:,"MONTH_YEAR"] = preproc_data[i].loc[:,"MONTH"] + (dates.apply(extract_year, 1) - 2011)*12 - 1
+		m = preproc_data[i].groupby(["MONTH_YEAR", "WEEKDAY"])["CSPL_RECEIVED_CALLS"].transform(np.mean)
+		s = preproc_data[i].groupby(["MONTH_YEAR", "WEEKDAY"])["CSPL_RECEIVED_CALLS"].transform(np.std)
 		preproc_data[i].loc[:, "WEEKDAY_MEAN"] = m
 		preproc_data[i].loc[:, "WEEKDAY_STD"] = s
 		#print preproc_data[i]
 		rcvcall = pd.DataFrame(rcvcall, index = dates)
 
-		mean, std = extract_mean_std(preproc_data[i])
-
-		max_mean = max(mean)
-		max_std = max(std)
+#		mean, std = extract_mean_std(preproc_data[i])
+		mean = np.zeros((36,7)) 
+		std = np.zeros((36,7)) 
+		for j in range(36):
+  			for k in range(7):
+  				sel = preproc_data[i].loc[preproc_data[i].loc[:,"MONTH_YEAR"] == j][preproc_data[i].loc[:,"WEEKDAY"] == k] 
+#  				print(sel)      
+  				mean[j,k] = sel["WEEKDAY_MEAN"].mean()
+  				std[j,k] = sel["WEEKDAY_STD"].mean()
+		max_mean = mean.max()
+		max_std = std.max()
 		max_rcvcall = max(rcvcall['CSPL_RECEIVED_CALLS'])
 
 		if max_mean != 0:
@@ -285,7 +316,7 @@ def get_day_mean_std(nrows, path, assignments):
 	#rcvcall[3.sort_values(["DATE"], inplace = True)
 	#print (rcvcall)
 
-	return mean_ass, std_ass, rcvcalls
+	return mean_ass, std_ass, rcvcalls, preproc_data
 
 
 def extract_mean_std(data):
@@ -316,5 +347,10 @@ def extract_mean_std(data):
 #FOR TESTING"
 
 if __name__ == '__main__':
+	ass = ['CMS', 'Crises', 'Domicile', 'Gestion', 'Gestion - Accueil Telephonique', 
+	'Gestion Assurances', 'Gestion Relation Clienteles', 'Gestion Renault', 'Japon', 'Médical',
+	 'Nuit', 'RENAULT', 'Regulation Medicale', 'SAP', 'Services', 'Tech. Axa', 'Tech. Inter', 'Téléphonie', 
+	 'Tech. Total', 'Mécanicien', 'CAT', 'Manager', 'Gestion Clients', 'Gestion DZ', 'RTC', 'Prestataires']
 	os.chdir("/home/nicolas/Documents/INF554 - Machine Learning/AXA Data Challenge")
-	read_file_content(20000, "train_2011_2012_2013.csv", "submission.txt")
+#	m_test, std_test, rcvcalls_test, preproc_test = get_day_mean_std(20000, "train_2011_2012_2013.csv", ass) 
+	read_file_content(20000, "train_2011_2012_2013.csv", "submission.txt", rcvcall_data, preproc_data)
